@@ -1,0 +1,9 @@
+setup.cfg
+setup.py
+GG_mthesis/Wavelet_Jet_Detection.py
+GG_mthesis/__init__.py
+GG_mthesis/imports.py
+local_GGmthesis.egg-info/PKG-INFO
+local_GGmthesis.egg-info/SOURCES.txt
+local_GGmthesis.egg-info/dependency_links.txt
+local_GGmthesis.egg-info/top_level.txt
