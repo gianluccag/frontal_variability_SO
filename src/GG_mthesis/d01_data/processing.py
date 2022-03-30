@@ -122,6 +122,7 @@ def downsample(df, gridsize):
         pd.dataframe: gridded data.
     """
     from scipy.interpolate import griddata
+    from datetime import datetime
     #create the distance grid
     distance_grid = np.arange(0, float(np.max(df.distance_cum)), gridsize)
     
@@ -133,13 +134,13 @@ def downsample(df, gridsize):
     rho = griddata(df['distance_cum'].values, df['rho'].values, distance_grid, method='linear')*grid_mask
     lon = griddata(df['distance_cum'].values, df['lon'].values, distance_grid, method='linear')
     lat = griddata(df['distance_cum'].values, df['lat'].values, distance_grid, method='linear')
+    time_stamp_arr = np.array([df['time'].iloc[i].to_pydatetime().timestamp() for i in range(len(df['time']))])
+    time = griddata(df['distance_cum'].values, time_stamp_arr, distance_grid, method='linear')
+    time = [np.datetime64(datetime.fromtimestamp(time[i])) for i in range(len(time))]
     df_aux = pd.DataFrame(rho, columns=['rho'], index=distance_grid)
     df_aux['lon'] = lon
     df_aux['lat'] = lat
-    
-    #we drop the points when the vessel moves or drifts a little bit back. There are just going to be small gaps.
-    df_aux = df_aux.drop(df_aux[df_aux['lat'].diff() > 0].index.values) 
-     
+    df_aux['time'] = time
     return df_aux
 
 def calculate_bx(df):
@@ -174,7 +175,7 @@ def grid_limits(df):
         
     return lat_max_north, lat_max_south
 
-def downsample_lat(df, gridsize, bx='bx', n_lim=-55.0, s_lim=-60.5):
+def downsample_lat(df, gridsize, bx='bx', n_lim=-55.0, s_lim=-60.5, method='linear'):
     """
     Interpolates to a constant latitude grid. 
 
@@ -189,6 +190,8 @@ def downsample_lat(df, gridsize, bx='bx', n_lim=-55.0, s_lim=-60.5):
     """
     import math as m
     from scipy.interpolate import griddata
+    from datetime import datetime
+    from GG_mthesis.d01_data.processing import truncate, grid_limits
     #create the distance grid
     lat_max, lat_min = grid_limits(df)
     lat_grid = np.arange(int(lat_max*1000), int(lat_min*1000), int(gridsize*1000))/1000
@@ -200,15 +203,19 @@ def downsample_lat(df, gridsize, bx='bx', n_lim=-55.0, s_lim=-60.5):
     
     x = df['lat'].values
     xp = lat_grid
-    rho_aux = griddata(x, df['rho'].values, xp, method='linear')*grid_mask
-    bx_aux = griddata(x, df[bx].values, xp, method='linear')*grid_mask
-    lon_aux = griddata(x, df['lon'].values, xp, method='linear')
+    rho_aux = griddata(x, df['rho'].values, xp, method=method)*grid_mask
+    bx_aux = griddata(x, df[bx].values, xp, method=method)*grid_mask
+    lon_aux = griddata(x, df['lon'].values, xp, method=method)
+    
+    time_stamp_arr = np.array([df['time'].iloc[i].to_pydatetime().timestamp() for i in range(len(df['time']))])
+    time = griddata(df['lat'].values, time_stamp_arr, lat_grid, method=method)
+    time = [datetime.fromtimestamp(time[i]) for i in range(len(time))]
     
     df_aux = pd.DataFrame(rho_aux, columns=['rho'], index=lat_grid)
     df_aux['bx'] = pd.DataFrame(bx_aux, columns=['bx'], index=lat_grid)
     df_aux['lon'] = pd.DataFrame(lon_aux, columns=['lon'], index=lat_grid)
     df_aux['lat'] = lat_grid
-    
+    df_aux['time'] = time
 
     aux_north = pd.DataFrame(index=np.arange(int(n_lim*1000), int(lat_max*1000), int(gridsize*1000))/1000) 
     #this is because of floating point arithmetic, which creates small imprecisions when repeatedly adding decimal numbers (what arange does). To circumvent this issue use
@@ -216,7 +223,7 @@ def downsample_lat(df, gridsize, bx='bx', n_lim=-55.0, s_lim=-60.5):
     aux_north[['rho', 'bx', 'lon', 'lat']] = np.nan, np.nan, np.nan, aux_north.index
 
     aux_south = pd.DataFrame(index=np.arange(int(lat_min*1000), int((-60.5+gridsize)*1000), int(gridsize*1000))/1000)
-    aux_south[['rho', 'bx', 'lon', 'lat']] = np.nan, np.nan, np.nan, aux_south.index    
+    aux_south[['rho', 'bx', 'lon', 'lat', 'time']] = np.nan, np.nan, np.nan, aux_south.index, np.nan    
     df_aux = pd.concat([aux_north, df_aux, aux_south])
 
     return df_aux
