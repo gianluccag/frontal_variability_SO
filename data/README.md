@@ -13,3 +13,5 @@ The folder in this directory contain the followign data:
     05_model_output: data after applying statistics.
     
     06_reporting: any summarizing data 
+
+Each folder includes a README.md explaining the data.
