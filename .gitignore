@@ -48,6 +48,9 @@ Thumbs.db
 *.mov
 *.wmv
 
+!README.md
+!*/README.md
+
 data/AVISO/dataset-duacs-rep-global-merged-twosat-phy-l4/2017/01/dt_global_twosat_phy_l4_20170101_vDT2018.nc
 data/AVISO/dataset-duacs-rep-global-merged-twosat-phy-l4/2017/01/dt_global_twosat_phy_l4_20170102_vDT2018.nc
 data/AVISO/dataset-duacs-rep-global-merged-twosat-phy-l4/2017/01/dt_global_twosat_phy_l4_20170103_vDT2018.nc
