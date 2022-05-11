@@ -53,13 +53,14 @@ class rmap():
         return df_front_sel
         
     def plot_region(filepath_bath='data/01_raw/ETOPO1_Bed_g_gmt4.grd', projection=ccrs.PlateCarree(), 
-                    fronts=True, filepath_fronts='data/03_processed/geo_fronts/park/62985.nc',
-                    lon_min=-75, lon_max=-52, lat_min=-65, lat_max=-52):
+                    fronts=True, filepath_fronts='data/01_raw/ACC_FRONTS/PARK/62985.nc',
+                    lon_min=-75, lon_max=-52, lat_min=-65, lat_max=-52, 
+                    figsize=(14,12)):
         bath = rmap.load(filepath_bath)
         bath = rmap.select_region(bath, lon_min, lon_max, lat_min, lat_max)
         import cmocean.cm as cm
         from matplotlib.cm import ScalarMappable
-        fig = plt.figure(figsize=(14,12))
+        fig = plt.figure(figsize=figsize)
         ax = plt.axes(projection=projection)
         x = bath.x
         y = bath.y
