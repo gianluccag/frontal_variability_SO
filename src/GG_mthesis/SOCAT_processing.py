@@ -1,3 +1,4 @@
+from fileinput import filename
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -91,3 +92,71 @@ class SOCAT():
                 df_aux.to_csv(filename)
             else:
                 continue
+
+    def select_transect(df, path='data/03_processed/SOCAT/'):
+        from GG_mthesis.d00_utils import geo
+        bearing = [geo.calculateBearing(df['lat'][i],df['lon'][i],df['lat'][i+1],df['lon'][i+1]) for i in range(len(df['lon'])-1)]
+        df = df[:-1]
+        df['bearing'] = bearing
+        
+        df_south = df.where(df['bearing'] > 135).where(df['bearing'] < 225)
+        df_south = df_south[df_south['bearing'].notna()]
+
+        df_north = df[~df['bearing'].between(45,315)]
+        df_north = df_north[df_north['bearing'].notna()]
+        
+        if not df_south.empty:
+            filename_south = path + str(df_south['Expocode'][0]) + '_south.csv'
+            df_south.to_csv(filename_south)
+
+        if not df_north.empty:
+            filename_north = path + str(df_north['Expocode'][0]) + '_north.csv'
+            df_north.to_csv(filename_north)
+
+
+    def sort_transect(df):
+        """
+        Sorts the data so it is aligned from North to South. This is important for calculating the gradient, so it is calculated in the same direction.
+        
+        Args:
+            df (pd.dataframe): the dataframe with the preprocessed TSG data, latitude should be given as lat and the index should be time.
+
+        Returns:
+            pd.dataframe: the same dataframe sorted from North to South.
+        """
+        if df['lat'][df['lat'].first_valid_index()] < df['lat'][df['lat'].last_valid_index()]:
+            df = df.sort_index(ascending=False)
+        return df
+    
+    def downsample(df, gridsize):
+        """
+        Grids the data to a equally distance grid.
+
+        Args:
+            df (pd.dataframe): pandas dataframe with the North-South sorted TSG transect.
+            gridsize (float): the desired distance it should be gridded to.
+
+        Returns:
+            pd.dataframe: gridded data.
+        """
+        from scipy.interpolate import griddata
+        from datetime import datetime
+        #create the distance grid
+        distance_grid = np.arange(0, float(np.max(df.distance_cum)), gridsize)
+        
+        #we need to create a mask so the nans stay nans after gridding and are not interpolated
+        df_mask = df.notna()[['rho', 'distance_cum']]
+        df_mask['distance_cum'] = df['distance_cum']
+        grid_mask = griddata(df_mask['distance_cum'].values, df_mask['rho'].values, distance_grid, method='linear')
+
+        rho = griddata(df['distance_cum'].values, df['rho'].values, distance_grid, method='linear')*grid_mask
+        lon = griddata(df['distance_cum'].values, df['lon'].values, distance_grid, method='linear')
+        lat = griddata(df['distance_cum'].values, df['lat'].values, distance_grid, method='linear')
+        # time_stamp_arr = np.array([df['time'].iloc[i].to_pydatetime().timestamp() for i in range(len(df['time']))])
+        # time = griddata(df['distance_cum'].values, time_stamp_arr, distance_grid, method='linear')
+        # time = [np.datetime64(datetime.fromtimestamp(time[i])) for i in range(len(time))]
+        df_aux = pd.DataFrame(rho, columns=['rho'], index=distance_grid)
+        df_aux['lon'] = lon
+        df_aux['lat'] = lat
+        # df_aux['time'] = time
+        return df_aux
