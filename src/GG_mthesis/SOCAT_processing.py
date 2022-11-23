@@ -152,7 +152,7 @@ class SOCAT():
         rho = griddata(df['distance_cum'].values, df['rho'].values, distance_grid, method='linear')*grid_mask
         lon = griddata(df['distance_cum'].values, df['lon'].values, distance_grid, method='linear')
         lat = griddata(df['distance_cum'].values, df['lat'].values, distance_grid, method='linear')
-        # time_stamp_arr = np.array([df['time'].iloc[i].to_pydatetime().timestamp() for i in range(len(df['time']))])
+        # time_stamp_arr = np.array([df['datetime'].iloc[i].to_pydatetime().timestamp() for i in range(len(df['datetime']))])
         # time = griddata(df['distance_cum'].values, time_stamp_arr, distance_grid, method='linear')
         # time = [np.datetime64(datetime.fromtimestamp(time[i])) for i in range(len(time))]
         df_aux = pd.DataFrame(rho, columns=['rho'], index=distance_grid)
@@ -160,3 +160,5 @@ class SOCAT():
         df_aux['lat'] = lat
         # df_aux['time'] = time
         return df_aux
+    
+    
